@@ -101,6 +101,8 @@ struct ibv_mr* rdma_buffer_alloc(struct ibv_pd *pd,
  */
 void rdma_buffer_free(struct ibv_mr *mr);
 
+void rdma_buffer_free_server(struct ibv_mr *mr);
+
 /* This function registers a previously allocated memory. Returns a memory region 
  * (MR) identifier or NULL on error.
  * @pd: protection domain where to register memory 

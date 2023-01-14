@@ -113,6 +113,18 @@ void rdma_buffer_free(struct ibv_mr *mr)
 	free(to_free);
 }
 
+void rdma_buffer_free_server(struct ibv_mr *mr) 
+{
+	if (!mr) {
+		rdma_error("Passed memory region is NULL, ignoring\n");
+		return ;
+	}
+	void *to_free = mr->addr;
+	rdma_buffer_deregister(mr);
+	debug("Buffer %p free'ed\n", to_free);
+	// free(to_free);
+}
+
 void rdma_buffer_deregister(struct ibv_mr *mr) 
 {
 	if (!mr) { 
