@@ -31,7 +31,7 @@
 	fprintf(stderr, "%s : %d : ERROR : "msg, __FILE__, __LINE__, ## args);\
 }while(0);
 
-#ifdef ACN_RDMA_DEBUG 
+#ifndef ACN_RDMA_DEBUG 
 /* Debug Macro */
 #define debug(msg, args...) do {\
     printf("DEBUG: "msg, ## args);\
@@ -100,6 +100,8 @@ struct ibv_mr* rdma_buffer_alloc(struct ibv_pd *pd,
  * @mr: RDMA memory region to free 
  */
 void rdma_buffer_free(struct ibv_mr *mr);
+
+void rdma_buffer_free_server(struct ibv_mr *mr);
 
 /* This function registers a previously allocated memory. Returns a memory region 
  * (MR) identifier or NULL on error.

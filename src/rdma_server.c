@@ -400,7 +400,7 @@ static int disconnect_and_cleanup()
 		// we continue anyways;
 	}
 	/* Destroy memory buffers */
-	rdma_buffer_free(server_buffer_mr);
+	rdma_buffer_free_server(server_buffer_mr);
 	rdma_buffer_deregister(server_metadata_mr);	
 	rdma_buffer_deregister(client_metadata_mr);	
 	/* Destroy protection domain */

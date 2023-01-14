@@ -4,7 +4,8 @@
  * Authors: Animesh Trivedi
  *          atrivedi@apache.org 
  */
-
+#include <fcntl.h>
+#include <sys/mman.h>
 #include "rdma_common.h"
 
 void show_rdma_cmid(struct rdma_cm_id *id)
@@ -45,13 +46,33 @@ struct ibv_mr* rdma_buffer_alloc(struct ibv_pd *pd, uint32_t size,
 		rdma_error("Protection domain is NULL \n");
 		return NULL;
 	}
-	void *buf = calloc(1, size);
-	if (!buf) {
-		rdma_error("failed to allocate buffer, -ENOMEM\n");
+
+	int fd = open("/mnt/pmem/file", O_CREAT | O_RDWR, 0644);
+	if(fd < 0) {
+		perror("Failed to open file");
 		return NULL;
 	}
+	int ret = posix_fallocate(fd, 0, size);
+	if(ret != 0) {
+		perror("Failed to fallocate");
+		return NULL;
+	}
+	printf("Fallocated successfully with size %d\n", size);
+
+	void *buf = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED, fd, 0);
+	if(buf == MAP_FAILED) {
+		perror("Memory map failed");
+		return NULL;
+	}
+	printf("Successfully did memory map!\n");
+
+	// void *buf = calloc(1, size);
+	// if (!buf) {
+	// 	rdma_error("failed to allocate buffer, -ENOMEM\n");
+	// 	return NULL;
+	// }
 	debug("Buffer allocated: %p , len: %u \n", buf, size);
-	mr = rdma_buffer_register(pd, buf, size, permission);
+	mr = rdma_buffer_register(pd, buf, size, permission | IBV_ACCESS_ON_DEMAND);
 	if(!mr){
 		free(buf);
 	}
@@ -70,6 +91,7 @@ struct ibv_mr *rdma_buffer_register(struct ibv_pd *pd,
 	mr = ibv_reg_mr(pd, addr, length, permission);
 	if (!mr) {
 		rdma_error("Failed to create mr on buffer, errno: %d \n", -errno);
+		perror("Failed to create memory region :( \n");
 		return NULL;
 	}
 	debug("Registered: %p , len: %u , stag: 0x%x \n", 
@@ -89,6 +111,18 @@ void rdma_buffer_free(struct ibv_mr *mr)
 	rdma_buffer_deregister(mr);
 	debug("Buffer %p free'ed\n", to_free);
 	free(to_free);
+}
+
+void rdma_buffer_free_server(struct ibv_mr *mr) 
+{
+	if (!mr) {
+		rdma_error("Passed memory region is NULL, ignoring\n");
+		return ;
+	}
+	void *to_free = mr->addr;
+	rdma_buffer_deregister(mr);
+	debug("Buffer %p free'ed\n", to_free);
+	// free(to_free);
 }
 
 void rdma_buffer_deregister(struct ibv_mr *mr) 
